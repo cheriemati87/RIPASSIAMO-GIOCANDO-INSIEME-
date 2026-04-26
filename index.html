@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Ripassiamo giocando insieme!</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+    font-family: 'Cinzel', serif;
+    background: #d9c7a1;
+    text-align: center;
+    margin: 0;
+    padding: 20px 10px 40px;
+    overflow-x: hidden;
+}
+
+h1 {
+    color: #4b2e1e;
+    margin-bottom: 10px;
+}
+
+#turno {
+    position: fixed;
+    top: 10px;
+    left: 20px;
+    z-index: 2000;
+    background: rgba(255,255,255,0.85);
+    padding: 8px 14px;
+    border-radius: 10px;
+}
+
+#setup {
+    margin: 20px auto 30px;
+}
+
+#setup select,
+button {
+    font-family: inherit;
+    font-size: 18px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: 1px solid #6e553d;
+}
+
+button {
+    cursor: pointer;
+    background: #fff8ea;
+}
+
+#gameControls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2000;
+}
+
+#dice {
+    width: 92px;
+    height: 92px;
+    margin: 10px auto 12px;
+    background: white;
+    border-radius: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 38px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+#rollBtn {
+    display: none;
+}
+
+#eventMessage {
+    min-height: 30px;
+    margin: 8px 0 14px;
+    font-size: 20px;
+    color: #4b2e1e;
+    font-weight: bold;
+}
+
+#board {
+    display: none;
+    margin: 20px auto;
+    width: fit-content;
+
+    display: grid;
+    grid-template-columns: repeat(9, 120px);
+    grid-auto-flow: row;
+    column-gap: 6px;
+    row-gap: 6px;
+}
+
+#board .tight-row {
+    margin-top: -8px;
+}
+
+.cell {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    padding: 6px;
+
+    border: 2px solid rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.2s;
+
+    position: relative;
+}
+
+.cell::after {
+    content: "";
+    position: absolute;
+    width: 40px;
+    height: 4px;
+    background: rgba(0,0,0,0.2);
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.cell:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+
+.cell img {
+    width: 78px;
+    height: 50px;
+    object-fit: cover;
+    margin-top: 6px;
+    border-radius: 8px;
+}
+
+.number {
+    font-size: 14px;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.start { background: #6aa84f; color: white; }
+.end { background: #cc0000; color: white; }
+.positive { background: #93c47d; }
+.negative { background: #e06666; color: white; }
+.question { background: #6fa8dc; color: white; font-size: 34px; }
+.normal { background: #f5e6c8; }
+
+.player {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    position: absolute;
+    border: 2px solid white;
+    box-sizing: border-box;
+    z-index: 20;
+}
+
+#flashcardModal {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    width: min(90vw, 560px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+#cardTeamLabel {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #4b2e1e;
+}
+
+.card img {
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #f6f6f6;
+}
+
+#answerButtons {
+    display: none;
+    margin-top: 10px;
+}
+
+#answerButtons p {
+    margin-bottom: 10px;
+}
+
+@media (max-width: 1400px) {
+    body {
+        overflow-x: hidden;
+    }
+}
+
+.big-down-arrow {
+    position: absolute;
+    
+    top: -30px;              /* sopra tra le due caselle */
+    left: -60px;             /* metà larghezza cella */
+
+    width: 240px;            /* copre 2 caselle */
+    text-align: center;
+
+    font-size: 32px;
+    pointer-events: none;
+}
+
+#boardWrapper {
+    width: 100%;
+    height: calc(100vh - 180px);
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 120px;
+    align-items: flex-start;
+}
+
+#board {
+    transform-origin: top center;
+}
+
+</style>
+</head>
+<body>
+
+<h1>📚 Ripassiamo giocando insieme!</h1>
+
+<div id="setup">
+    <p>Scegli il numero di squadre:</p>
+    <select id="numPlayers">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+    </select>
+    <br><br>
+    <button onclick="startGame()">Inizia partita</button>
+</div>
+
+<h2 id="turno"></h2>
+<div id="eventMessage"></div>
+
+<div id="gameControls">
+    <div id="dice">🎲</div>
+    <button id="rollBtn" onclick="rollDice()">Lancia il dado</button>
+</div>
+
+<div id="boardWrapper">
+    <div id="board"></div>
+</div>
+
+<div id="flashcardModal">
+    <div class="card">
+        <div id="cardTeamLabel"></div>
+        <img id="cardImage" alt="Flashcard">
+        <button id="flipBtn" onclick="flipCard()">Gira la carta</button>
+        <div id="answerButtons">
+            <p>Hai risposto giusto?</p>
+            <button onclick="answerResult(true)">SI</button>
+            <button onclick="answerResult(false)">NO</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const IMAGE_BASE = '';
+const CARD_BASE = '';
+
+const colors = ["red","blue","green","yellow","purple","black"];
+let players = [];
+let currentPlayer = 0;
+let gameStarted = false;
+let awaitingCardResolution = false;
+let currentCard = null;
+let lastCard = null;
+let isFront = true;
+let extraTurn = false;
+
+let flashcards = [
+    {front:"Card1_front.jpg",back:"Card1_retro.jpg"},
+    {front:"Card2_front.jpg",back:"Card2_retro.jpg"},
+    {front:"Card3_front.jpg",back:"Card3_retro.jpg"},
+    {front:"Card4_front.jpg",back:"Card4_retro.jpg"},
+    {front:"Card5_front.jpg",back:"Card5_retro.jpg"},
+    {front:"Card7_front.jpg",back:"Card7_retro.jpg"},
+    {front:"Card8_front.jpg",back:"Card8_retro.jpg"},
+    {front:"Card10_front.jpg",back:"Card10_retro.jpg"},
+    {front:"Card11_front.jpg",back:"Card11_retro.jpg"},
+    {front:"Card12_front.jpg",back:"Card12_retro.jpg"},
+    {front:"Card13_front.jpg",back:"Card13_retro.jpg"},
+    {front:"Cardgeom2_front.jpg",back:"Cardgeom2_retro.jpg"},
+    {front:"Cardgeom3_front.jpg",back:"Cardgeom3_retro.jpg"},
+    {front:"Cardgeom4_front.jpg",back:"Cardgeom4_retro.jpg"},
+    {front:"Cardgeom5_front.jpg",back:"Cardgeom5_retro.jpg"},
+    {front:"Cardgeom9_front.jpg",back:"Cardgeom9_retro.jpg"},
+    {front:"Cardgeom16_front.jpg",back:"Cardgeom16_retro.jpg"},
+    {front:"Cardstoria1_fronte.jpg",back:"Cardstoria1_retro.jpg"},
+    {front:"Cardstoria2_fronte.jpg",back:"Cardstoria2_retro.jpg"},
+    {front:"Cardstoria3_fronte.jpg",back:"Cardstoria3_retro.jpg"},
+    {front:"Cardstoria4_fronte.jpg",back:"Cardstoria4_retro.jpg"},
+    {front:"Cardstoria5_fronte.jpg",back:"Cardstoria5_retro.jpg"},
+    {front:"Cardstoria6_fronte.jpg",back:"Cardstoria6_retro.jpg"},
+    {front:"Cardstoria7_fronte.jpg",back:"Cardstoria7_retro.jpg"},
+    {front:"Cardstoria8_fronte.jpg",back:"Cardstoria8_retro.jpg"},
+    {front:"Cardstoria9_fronte.jpg",back:"Cardstoria9_retro.jpg"},
+    {front:"Cardstoria10_fronte.jpg",back:"Cardstoria10_retro.jpg"},
+    {front:"Cardstoria11_fronte.jpg",back:"Cardstoria11_retro.jpg"},
+    {front:"Cardstoria12_fronte.jpg",back:"Cardstoria12_retro.jpg"},
+    {front:"Cardstoria13_fronte.jpg",back:"Cardstoria13_retro.jpg"},
+    {front:"Cardstoria14_fronte.jpg",back:"Cardstoria14_retro.jpg"},
+    {front:"Cardstoria15_fronte.jpg",back:"Cardstoria15_retro.jpg"},
+    {front:"Cardstoria16_fronte.jpg",back:"Cardstoria16_retro.jpg"},
+    {front:"Cardstoria17_fronte.jpg",back:"Cardstoria17_retro.jpg"},
+    {front:"Cardstoria18_fronte.jpg",back:"Cardstoria18_retro.jpg"},
+];
+
+const flashcardsOriginal = [...flashcards];
+
+const TOTAL_CELLS = 45;
+
+const FINAL_CELL = TOTAL_CELLS - 1;
+
+const questionCells = [5,10,15,20,25,30,35,40];
+
+const board = document.getElementById("board");
+
+function setEventMessage(text){
+    document.getElementById("eventMessage").innerText = text || "";
+}
+
+function startGame(){
+    const n = parseInt(document.getElementById("numPlayers").value, 10);
+
+    players = [];
+
+    for(let i = 0; i < n; i++){
+        players.push({
+    name: "Squadra " + (i + 1),
+    position: 0,
+    color: colors[i],
+    score: 0,
+    skipTurn: false
+});
+}
+
+    currentPlayer = 0;
+    awaitingCardResolution = false;
+    extraTurn = false;
+    currentCard = null;
+    isFront = true;
+    gameStarted = true;
+
+    document.getElementById("setup").style.display = "none";
+    document.getElementById("board").style.display = "grid";
+    document.getElementById("dice").style.display = "flex";
+    document.getElementById("rollBtn").style.display = "inline-block";
+    document.getElementById("rollBtn").disabled = false;
+    document.getElementById("dice").innerText = "🎲";
+
+    setEventMessage("");
+
+    createBoard();
+    updateBoard();
+    aggiornaTurno();
+    setTimeout(scaleBoard, 100);
+}
+
+function scaleBoard(){
+    const board = document.getElementById("board");
+    const wrapper = document.getElementById("boardWrapper");
+
+    const scaleX = wrapper.clientWidth / board.scrollWidth;
+    const scaleY = wrapper.clientHeight / board.scrollHeight;
+
+    const scale = Math.min(scaleX, scaleY, 1);
+
+    board.style.transform = "scale(" + scale + ")";
+    wrapper.style.height = (board.scrollHeight * scale) + "px";
+}
+
+function createBoard(){
+    board.innerHTML = "";
+
+    const cols = 9;
+
+    for(let row = 0; row < Math.ceil(TOTAL_CELLS / cols); row++){
+
+        let rowCells = [];
+
+        for(let col = 0; col < cols; col++){
+
+            const i = row * cols + col;
+            if(i >= TOTAL_CELLS) break;
+
+            const cell = document.createElement("div");
+
+            let type = "normal";
+            let number = (i===0) ? "" : "<div class='number'>" + i + "</div>";
+            let content = "";
+
+            if(i===0){
+                type = "start";
+                content = "PARTENZA";
+            }
+            else if(questionCells.includes(i) || [8,37,43].includes(i)){
+    type = "question";
+    content = "❓";
+}
+            else if(i===3){
+                type = "positive";
+                content = "GUERRA LAMPO +3 <img src='" + IMAGE_BASE + "CARROARMATO.jpg'>";
+            }
+            else if(i===5){
+                type = "negative";
+                content = "BOMBARDAMENTI -3 <img src='" + IMAGE_BASE + "BOMBARDAMENTI.jpg'>";
+            }
+            else if(i===13){
+    type = "negative";
+    content = "INVERNO RUSSO -2 <img src='" + IMAGE_BASE + "CAMPAGNA%20DI%20RUSSIA.jpg'>";
+            }
+            else if(i===20){
+                type = "positive";
+                content = "STALINGRADO +2 <img src='" + IMAGE_BASE + "CARROARMATO.jpg'>";
+            }
+            else if(i===23){
+    type = "positive";
+    content = "ATTACCO A PEARL HARBOR +3 <img src='" + IMAGE_BASE + "PEARL_HARBOR.jpg'>";
+            }
+            else if(i===25){
+                type = "positive";
+                content = "SBARCO ALLEATI +3 <img src='" + IMAGE_BASE + "SBARCO_NORMANDIA.jpg'>";
+            }
+            else if(i===28){
+    type = "positive";
+    content = "SBARCO ALLEATI +3 <img src='" + IMAGE_BASE + "SBARCO_NORMANDIA.jpg'>";
+            }
+            else if(i===32){
+                type = "positive";
+                content = "RAID AEREO +3 <img src='" + IMAGE_BASE + "AEREI.jpg'>";
+            }                             
+            else if(i===38){
+                type = "negative";
+                content = "SALTA 1 TURNO <img src='" + IMAGE_BASE + "CARROARMATO.jpg'>";
+            }
+            else if(i===41){
+    type = "negative";
+    content = "BOMBA ATOMICA -1 <img src='" + IMAGE_BASE + "23%20-%20BOMBA%20ATOMICA.jpg'>";
+}
+            else if(i===FINAL_CELL){
+                type = "end";
+                content = "ARRIVO <img src='" + IMAGE_BASE + "PACE.jpg'>";
+            }
+
+if([9,18,27,36].includes(i)){
+    content += "<div class='big-down-arrow'>⬇️</div>";
+}
+            cell.classList.add("cell", type);
+            cell.innerHTML = number + content;
+            cell.id = "cell-" + i;
+
+            rowCells.push(cell);
+        }
+
+        if(row % 2 === 1){
+            rowCells.reverse();
+        }
+
+        rowCells.forEach(cell => {
+    if([9,18,27,36].includes(parseInt(cell.id.split("-")[1]))){
+        cell.classList.add("tight-row");
+    }
+
+    board.appendChild(cell);
+});
+}
+}
+
+function aggiornaTurno(){
+    const el = document.getElementById("turno");
+    if (!gameStarted || players.length === 0) {
+        el.innerText = "";
+        return;
+    }
+    el.innerText = "Turno: " + players[currentPlayer].name;
+    el.style.color = players[currentPlayer].color;
+}
+
+function getRandomCard(){
+    if(flashcards.length === 0){
+    flashcards = [...flashcardsOriginal];
+    setEventMessage("Nuovo giro di carte!");
+}
+   let i;
+let card;
+
+do {
+    i = Math.floor(Math.random() * flashcards.length);
+    card = flashcards[i];
+} while(lastCard && card.front === lastCard.front && flashcards.length > 1);
+
+flashcards.splice(i,1);
+lastCard = card;
+
+return card;
+}
+
+function showFlashcard(){
+    currentCard = getRandomCard();
+
+    if(!currentCard){
+        awaitingCardResolution = false;
+        finalizeTurn();
+        return;
+    }
+
+    const teamName = players[currentPlayer].name;
+    setEventMessage("Domanda per " + teamName + "!");
+    alert("Tocca a " + teamName + " rispondere alla domanda.");
+
+    awaitingCardResolution = true;
+    isFront = true;
+
+    document.getElementById("cardTeamLabel").innerText = "Risponde: " + teamName;
+    document.getElementById("cardImage").src = CARD_BASE + currentCard.front;
+    document.getElementById("flashcardModal").style.display = "flex";
+    document.getElementById("answerButtons").style.display = "none";
+    document.getElementById("flipBtn").style.display = "inline-block";
+}
+
+function flipCard(){
+    if(isFront && currentCard){
+        document.getElementById("cardImage").src = CARD_BASE + currentCard.back;
+        document.getElementById("answerButtons").style.display = "block";
+        document.getElementById("flipBtn").style.display = "none";
+        isFront = false;
+    }
+}
+
+function answerResult(correct){
+    document.getElementById("flashcardModal").style.display = "none";
+    document.getElementById("cardTeamLabel").innerText = "";
+    document.getElementById("answerButtons").style.display = "none";
+    document.getElementById("flipBtn").style.display = "inline-block";
+
+    extraTurn = correct;
+    awaitingCardResolution = false;
+
+    if(correct){
+        setEventMessage(players[currentPlayer].name + " ha risposto bene: ha diritto a un turno extra.");
+    } else {
+        setEventMessage(players[currentPlayer].name + " non ha ottenuto il turno extra.");
+    }
+
+    updateBoard();
+    finalizeTurn();
+}
+
+function updateBoard(){
+    document.querySelectorAll(".player").forEach(p => p.remove());
+
+    players.forEach((p,index) => {
+        const piece = document.createElement("div");
+        piece.classList.add("player");
+        piece.style.background = p.color;
+if(p.skipTurn){
+    piece.style.opacity = "0.5";
+    piece.innerHTML = "⛔";
+    piece.style.display = "flex";
+    piece.style.alignItems = "center";
+    piece.style.justifyContent = "center";
+    piece.style.fontSize = "14px";
+}
+        const offsetPositions = [
+            {x: 8, y: 8},
+            {x: 36, y: 8},
+            {x: 64, y: 8},
+            {x: 8, y: 36},
+            {x: 36, y: 36},
+            {x: 64, y: 36}
+        ];
+
+        const offset = offsetPositions[index] || {x: 8, y: 8};
+        piece.style.left = offset.x + "px";
+        piece.style.top = offset.y + "px";
+
+        document.getElementById("cell-" + p.position).appendChild(piece);
+    });
+
+    aggiornaTurno();
+}
+
+function isQuestion(pos){
+    return questionCells.includes(pos) || [8,37,43].includes(pos);
+}
+
+function finalizeTurn(){
+
+    if(!extraTurn){
+        currentPlayer = (currentPlayer + 1) % players.length;
+    }
+
+    extraTurn = false;
+
+    if(players[currentPlayer].skipTurn){
+        setEventMessage(players[currentPlayer].name + " salta il turno!");
+        players[currentPlayer].skipTurn = false;
+        currentPlayer = (currentPlayer + 1) % players.length;
+    }
+
+    updateBoard();
+}
+
+function movePlayerAnimated(player, steps, callback, direction = 1){
+    let count = 0;
+
+    function step(){
+        if(count < steps){
+
+            player.position += direction;
+
+            if(player.position < 0) player.position = 0;
+            if(player.position > FINAL_CELL) player.position = FINAL_CELL;
+
+            updateBoard();
+            focusOnPlayer(player);
+            count++;
+
+            setTimeout(step, 300);
+        } else {
+            updateBoard();
+            callback();
+    }
+    }
+
+    step();
+}
+
+function handleLanding(player){
+
+    if(player.position === FINAL_CELL){
+        setEventMessage(player.name + " ha raggiunto l'arrivo!");
+        alert(player.name + " ha vinto!");
+        document.getElementById("rollBtn").disabled = true;
+        return;
+    }
+
+    if(isQuestion(player.position)){
+        setTimeout(() => showFlashcard(), 500);
+        return;
+    }
+
+    const isSpecial = handleSpecialCell(player);
+
+    if(!isSpecial){
+        finalizeTurn();
+    }
+}
+
+function handleSpecialCell(player){
+
+    let steps = 0;
+    let message = "";
+
+    if(player.position === 3){
+        steps = 3;
+        message = "Guerra lampo! Avanza di 3 caselle.";
+    }
+    else if(player.position === 20){
+        steps = 2;
+        message = "Stalingrado! Avanza di 2 caselle.";
+    }
+    else if(player.position === 23){
+    steps = 3;
+    message = "Attacco a Pearl Harbor! Avanza di 3 caselle.";
+    }
+    else if(player.position === 25){
+        steps = 2;
+        message = "D-Day! Avanza di 2 caselle.";
+    }
+    else if(player.position === 28){
+    steps = 3;
+    message = "Sbarco alleati! Avanza di 3 caselle.";
+    }
+    else if(player.position === 5){
+        steps = -3;
+        message = "Bombardamenti! Torna indietro di 3 caselle.";
+    }
+    else if(player.position === 13){
+    steps = -2;
+    message = "Inverno russo! Torna indietro di 2 caselle.";
+    }
+    else if(player.position === 41){
+    steps = -2;
+    message = "Bomba atomica! Torna indietro di 1 casella.";
+}
+    else if(player.position === 32){
+    steps = 3;
+    message = "Raid aereo! Avanza di 3 caselle.";
+}
+    else if(player.position === 36){
+    message = "Fortuna! Puoi rilanciare il dado!";
+    setEventMessage(message);
+    extraTurn = true;
+    setTimeout(() => finalizeTurn(), 1200);
+    return true;
+    }
+    else if(player.position === 38){
+    message = "SALTA 1 TURNO! Le altre squadre giocheranno due volte.";
+    setEventMessage(message);
+    players[currentPlayer].skipTurn = true;
+    setTimeout(() => finalizeTurn(), 1200);
+    return true;
+    }
+    if(steps === 0){
+    return false;
+}
+
+    setEventMessage(message);
+
+    setTimeout(() => {
+
+        const direction = steps > 0 ? 1 : -1;
+
+        movePlayerAnimated(player, Math.abs(steps), () => {
+
+    updateBoard();
+
+    if(player.position === FINAL_CELL){
+        setEventMessage(player.name + " ha raggiunto l'arrivo!");
+        alert(player.name + " ha vinto!");
+        document.getElementById("rollBtn").disabled = true;
+        return;
+    }
+
+    handleLanding(player);
+
+}, direction);
+
+    }, 1200);
+
+    return true;
+}
+
+function focusOnPlayer(player){
+    const cell = document.getElementById("cell-" + player.position);
+    const wrapper = document.getElementById("boardWrapper");
+
+    const rect = cell.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+
+    const offsetX = rect.left - wrapperRect.left - wrapper.clientWidth / 2 + rect.width / 2;
+    const offsetY = rect.top - wrapperRect.top - wrapper.clientHeight / 2 + rect.height / 2;
+
+    wrapper.scrollBy({
+        left: offsetX,
+        top: offsetY,
+        behavior: "smooth"
+    });
+}
+
+function rollDice(){
+    if(!gameStarted || awaitingCardResolution){
+        return;
+    }
+
+    setEventMessage("");
+
+    const dice = Math.floor(Math.random() * 6) + 1;
+    document.getElementById("dice").innerText = dice;
+
+    const player = players[currentPlayer];
+    movePlayerAnimated(player, dice, () => {
+
+    const landedPosition = player.position;
+
+    if(landedPosition === FINAL_CELL){
+    setEventMessage(player.name + " ha raggiunto l'arrivo!");
+    alert(player.name + " ha vinto!");
+    document.getElementById("rollBtn").disabled = true;
+    return;
+}
+
+ handleLanding(player);
+
+});
+}
+
+window.addEventListener("resize", scaleBoard);
+</script>
+
+</body>
+</html>
